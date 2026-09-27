@@ -3,11 +3,11 @@
     "nixos-repo": {
       "flake": false,
       "locked": {
-        "lastModified": 1790474868,
-        "narHash": "sha256-5DubtJBQBysEbrlcjtlfldiz4IvArLLGBnYknYpON10=",
+        "lastModified": 1790475065,
+        "narHash": "sha256-tJFEMkivJ6tAA0FU0KNzVNlGcGAkZW4QsumiXusjiEo=",
         "owner": "waxkb",
         "repo": "nixos",
-        "rev": "6d2c5ed80a176967bcb01cb6631a064c080a8ba6",
+        "rev": "c5643b30c90af2861da52133ce1b536e79f4f14d",
         "type": "github"
       },
       "original": {
