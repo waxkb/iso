@@ -3,24 +3,12 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-
-    # Single source of truth for install.sh stays in the main repo;
-    # this input bakes that file into the ISO at build time.
-    # `flake = false` => plain source snapshot, no transitive locking.
-    # After changing install.sh upstream, run:
-    #   nix flake update nixos-repo
-    # ...before rebuilding the ISO, or the ISO ships the old script.
-    nixos-repo = {
-      url = "github:waxkb/nixos";
-      flake = false;
-    };
   };
 
   outputs =
     {
       self,
       nixpkgs,
-      nixos-repo,
     }:
     {
       nixosConfigurations.iso = nixpkgs.lib.nixosSystem {
@@ -28,8 +16,11 @@
         system = "x86_64-linux";
 
         modules = [
-          # Pulls in the official minimal installation CD configuration profile
-          "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix"
+          # Official minimal installation CD profile, using the current mainline
+          # kernel and explicitly without ZFS. The bcachefs module in the default
+          # 6.18 kernel does not compile against that kernel's inode API, while
+          # the same module builds against linuxPackages_latest.
+          "${nixpkgs}/nixos/modules/installer/cd-dvd/installation-cd-minimal-new-kernel-no-zfs.nix"
 
           (
             {
@@ -37,17 +28,14 @@
               ...
             }:
             {
-              # Force the live kernel to build and include the out-of-tree bcachefs module
+              # The live kernel needs bcachefs so the target can be formatted.
               boot.supportedFilesystems = [ "bcachefs" ];
 
-              environment.etc."nixos-installer/install.sh".source = "${nixos-repo}/install.sh";
+              environment.etc."nixos-installer/install.sh".source = ./install.sh;
 
-              # Everything install.sh shells out to, beyond what the
-              # minimal ISO already carries (lspci, dmidecode and sgdisk
-              # are the easy ones to miss).
-              # openssl/whois(python3 fallback) are for password hashing
-              # (mkpasswd / openssl passwd -6 / crypt), python3 also
-              # drives the flake.nix entry generator.
+              # Everything install.sh shells out to, beyond what the minimal ISO
+              # already carries. The installer loops over module files itself;
+              # it does not need python or any repo-specific tooling.
               environment.systemPackages = with pkgs; [
                 bcachefs-tools
                 curl
@@ -57,10 +45,10 @@
                 git
                 gptfdisk # sgdisk
                 openssl # openssl passwd -6
-                parted
+                parted # partprobe
                 pciutils # lspci
-                python3
                 usbutils
+                util-linux # lsblk, wipefs, mount, swapon, udevadm
                 whois # mkpasswd
               ];
 
